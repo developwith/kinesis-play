@@ -1,0 +1,85 @@
+
+// Apply plugins
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+apply plugin: 'application'
+
+configurations {
+  compile {
+    transitive = true
+  }
+
+  runtime {
+    extendsFrom compile
+  }
+}
+
+dependencies {
+  compile "com.amazonaws:aws-java-sdk:1.9.37"
+  compile "com.amazonaws:amazon-kinesis-client:1.2.1"
+  testCompile 'junit:junit:4.11'
+
+}
+
+buildscript {
+  repositories {
+    mavenLocal()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    mavenCentral()
+  }
+}
+
+loadProperties("${System.getProperty('user.home')}/gradle.properties")
+
+defaultTasks = ['assemble']
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+repositories {
+  mavenLocal()
+  maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+  mavenCentral()
+}
+
+
+sourceSets {
+  main {
+    resources.srcDirs = ['src/main/resources']
+  }
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+  archives javadocJar, sourcesJar
+}
+
+eclipse {
+  classpath {
+    defaultOutputDir = file('build/classes')
+  }
+}
+
+def loadProperties(String sourceFileName) {
+  def config = new Properties()
+  def propFile = new File(sourceFileName)
+  if (propFile.canRead()) {
+    config.load(new FileInputStream(propFile))
+    for (Map.Entry property in config) {
+      project.ext[property.key] = property.value;
+    }
+  }
+}
+
