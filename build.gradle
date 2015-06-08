@@ -19,6 +19,7 @@ configurations {
 
 dependencies {
   compile "com.amazonaws:aws-java-sdk:1.9.37"
+  compile "org.msgpack:msgpack-core:0.7.0-p9"
   compile "com.amazonaws:amazon-kinesis-client:1.2.1"
   testCompile 'junit:junit:4.11'
 

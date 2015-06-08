@@ -1,4 +1,4 @@
-package com.driedtoast.example;
+package com.driedtoast.stream;
 
 public enum StreamStatus {
 	DELETING,

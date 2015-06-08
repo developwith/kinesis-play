@@ -1,8 +1,5 @@
-package com.driedtoast.example;
+package com.driedtoast.stream;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,31 +16,32 @@ import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
 import com.amazonaws.services.kinesis.model.Record;
 
-public class StreamItemService implements IRecordProcessor, IRecordProcessorFactory {
+public class StreamItemService<T,E> implements IRecordProcessor, IRecordProcessorFactory {
 	private AmazonKinesisClient client;
     private String shardId;
-	private final CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
 	private ProfileCredentialsProvider credentialsProvider;
-	private SimpleStreamConsumer consumer;
+	private SimpleStreamer<T,E> consumer;
 
-	public StreamItemService(AmazonKinesisClient client) {
+
+	public StreamItemService(AmazonKinesisClient client, SimpleStreamer<T,E> streamer) {
 		this.client = client;
+		this.consumer = streamer;
 	}
 
-	public StreamItemService(SimpleStreamConsumer consumer) {
+	public StreamItemService(SimpleStreamer<T, E> consumer) {
 		this.consumer = consumer;
 	}
 
-	public PutRecordResult put(String streamName, String message, String partition) {
+	public PutRecordResult put(String streamName, E message, String partition) {
 		PutRecordRequest putRecordRequest = new PutRecordRequest();
 		putRecordRequest.setStreamName(streamName);
-		putRecordRequest.setData(ByteBuffer.wrap(message.getBytes()));
+		putRecordRequest.setData(consumer.encoder().encode(message));
 		putRecordRequest.setPartitionKey(partition);
 		PutRecordResult putRecordResult = client.putRecord(putRecordRequest);
 		return putRecordResult;
 	}
 
-	public void startConsuming(String streamName, SimpleStreamConsumer consumer) {
+	public void startConsuming(String streamName, SimpleStreamer<T, E> consumer) {
 		this.consumer = consumer;
 		String workerId = UUID.randomUUID().toString();
 		final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(consumer.consumerName(), streamName, getProvider(),
@@ -65,7 +63,7 @@ public class StreamItemService implements IRecordProcessor, IRecordProcessorFact
 
 	@Override
 	public IRecordProcessor createProcessor() {
-		return new StreamItemService(consumer);
+		return new StreamItemService<T, E>(consumer);
 	}
 
 	@Override
@@ -80,7 +78,7 @@ public class StreamItemService implements IRecordProcessor, IRecordProcessorFact
 		for (Record record : records) {
 			try {
 				// TODO add retry and blocking
-				consumer.consume(decoder.decode(record.getData()).toString());				
+				consumer.consume(consumer.decoder().decode(record.getData()));				
 			} catch (Exception e) {
 				// TODO log this
 				e.printStackTrace();

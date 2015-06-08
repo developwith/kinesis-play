@@ -1,4 +1,4 @@
-package com.driedtoast.example;
+package com.driedtoast.stream;
 
 import java.util.List;
 import java.util.concurrent.Callable;

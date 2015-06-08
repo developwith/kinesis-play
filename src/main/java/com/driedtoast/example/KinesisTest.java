@@ -6,6 +6,12 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.driedtoast.stream.SimpleStreamer;
+import com.driedtoast.stream.StreamDecoder;
+import com.driedtoast.stream.StreamEncoder;
+import com.driedtoast.stream.StreamItemService;
+import com.driedtoast.stream.StreamService;
+import com.driedtoast.stream.decoders.StringEncoderDecoder;
 
 public class KinesisTest {
 
@@ -45,9 +51,17 @@ public class KinesisTest {
 		if (!streamNames.isEmpty()) {
 			String streamName = streamNames.get(0);
 
-			StreamItemService itemService = new StreamItemService(kinesis);
-			itemService.startConsuming(streamName, new SimpleStreamConsumer() {
+			final StringEncoderDecoder decoderEncoder = new StringEncoderDecoder();
+			SimpleStreamer<String, String> streamer = new SimpleStreamer<String, String>() {
 
+				public StreamEncoder<String> encoder() {
+					return decoderEncoder;
+				}
+				
+				public StreamDecoder<String> decoder() {
+					return decoderEncoder;
+				}
+				
 				@Override
 				public void consume(String message) {
 					System.out.println("Getting message " + message);					
@@ -58,7 +72,9 @@ public class KinesisTest {
 					return "testDanConsumer";
 				}
 				
-			});
+			};
+			StreamItemService<String, String> itemService = new StreamItemService<String, String>(kinesis, streamer);
+			itemService.startConsuming(streamName, streamer);
 
 			Thread.sleep(1500);
 			
