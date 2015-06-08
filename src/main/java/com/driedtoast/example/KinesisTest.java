@@ -6,7 +6,6 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 
 public class KinesisTest {
 
@@ -33,7 +32,8 @@ public class KinesisTest {
 		init();
 
 		StreamService service = new StreamService(kinesis);
-		DescribeStreamResult result = service.findOrCreate("testDanStream");
+		// Setup initial stream
+		service.findOrCreate("testDanStream");
 
 		List<String> streamNames = service.list();
 		// Print all of my streams.
@@ -45,15 +45,12 @@ public class KinesisTest {
 		if (!streamNames.isEmpty()) {
 			String streamName = streamNames.get(0);
 
-			long start = System.currentTimeMillis();
 			StreamItemService itemService = new StreamItemService(kinesis);
-			itemService.put(streamNames.get(0), "Hello Stream", "partition-" + start);
-
 			itemService.startConsuming(streamName, new SimpleStreamConsumer() {
 
 				@Override
 				public void consume(String message) {
-					System.out.println("Gettting message " + message);					
+					System.out.println("Getting message " + message);					
 				}
 
 				@Override
@@ -62,7 +59,17 @@ public class KinesisTest {
 				}
 				
 			});
+
+			Thread.sleep(1500);
 			
+			int max_records = 50;
+			for(int i = 0; i < max_records; i++) {
+			  long start = System.currentTimeMillis();
+			  itemService.put(streamName, "Hello Stream" + i, ", partition-" + start);
+			  System.out.println(" STREAM PUSH IS " + streamName);
+			}
+
+						
 		}
 	}
 
